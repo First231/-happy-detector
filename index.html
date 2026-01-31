@@ -3,26 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบตรวจเช็คความสุขประจำวัน - ม.2/1</title>
-    <!-- Library สำหรับตรวจจับใบหน้าและอารมณ์ -->
+    <title>ระบบตรวจเช็คความสุขประจำวัน</title>
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-    <!-- Library สำหรับเอฟเฟกต์พลุกระดาษ -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <!-- Tailwind CSS สำหรับการตกแต่ง UI -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- ฟอนต์ภาษาไทย Kanit -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Kanit', sans-serif;
-            background-color: #f0f4f8;
-            background-image: radial-gradient(#d1d5db 1px, transparent 1px);
-            background-size: 20px 20px;
+            background-color: #f8fafc;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
         }
         .app-card {
-            border: 2px solid #075985;
-            border-radius: 1.5rem;
-            max-width: 850px;
+            border: 2px solid #0f172a;
+            border-radius: 2rem;
+            max-width: 800px;
             width: 100%;
             background: white;
         }
@@ -31,10 +27,10 @@
             width: 100%;
             max-width: 640px;
             margin: 0 auto;
-            border-radius: 1rem;
+            border-radius: 1.5rem;
             overflow: hidden;
-            /* สลับด้านวิดีโอให้เป็นแบบกระจก (Mirror) */
             transform: scaleX(-1);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
         }
         canvas {
             position: absolute;
@@ -48,68 +44,62 @@
             height: auto;
         }
         .blessing-modal {
-            animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: popUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.05); opacity: 0.8; }
-            70% { transform: scale(0.9); opacity: 0.9; }
+        @keyframes popUp {
+            0% { transform: scale(0.5); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-6 text-slate-800">
+<body class="min-h-screen flex flex-col items-center justify-center p-6 text-slate-900">
 
-    <div class="app-card shadow-2xl p-8 text-center relative">
-        <!-- Header: โลโก้และชื่อโรงเรียน -->
-        <div class="mb-6">
-            <div class="flex justify-center mb-4">
-                <!-- ตราโรงเรียนปราจิณราษฎรอำรุง -->
-                <img src="https://upload.wikimedia.org/wikipedia/th/a/a0/Prajinratsadornrung_School_Logo.png" 
-                     alt="โลโก้โรงเรียนปราจิณราษฎรอำรุง" 
-                     class="w-24 h-24 object-contain">
-            </div>
-            <h1 class="text-3xl font-bold text-sky-800">ระบบตรวจเช็คความสุขประจำวัน</h1>
-            <p class="text-xl text-gray-600 mt-1">นักเรียนชั้น ม.2/1 โรงเรียนปราจิณราษฎรอำรุง</p>
+    <div class="app-card shadow-2xl p-10 text-center relative">
+        <!-- Header: ปรับใหม่หลังนำโลโก้ออก -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">AI Happiness Detector</h1>
+            <div class="h-1.5 w-20 bg-sky-500 mx-auto my-4 rounded-full"></div>
+            <p class="text-lg text-slate-500 font-light">ยิ้มให้กล้องเพื่อรับคำอวยพรประจำวันของคุณ</p>
         </div>
 
-        <!-- Video Display: ส่วนแสดงผลกล้องและ AI -->
-        <div id="video-container" class="shadow-lg bg-gray-100 border border-gray-200">
+        <!-- Camera Section -->
+        <div id="video-container" class="bg-slate-100 border border-slate-200">
             <video id="video" autoplay muted playsinline></video>
-            <!-- หน้าจอโหลดขณะ AI กำลังเตรียมความพร้อม -->
             <div id="loading-spinner" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-20" style="transform: scaleX(-1);">
-                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-sky-700"></div>
-                <p class="mt-2 text-sky-700 text-sm font-medium">ระบบ AI กำลังเริ่มต้น...</p>
+                <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-sky-600 border-opacity-25 border-t-sky-600"></div>
+                <p class="mt-4 text-sky-800 font-medium">กำลังเตรียมความพร้อมของ AI...</p>
             </div>
         </div>
 
-        <!-- System Status Bar: แถบสถานะด้านล่าง -->
-        <div class="mt-6 w-full">
-            <div id="status-bar" class="bg-blue-50 border border-blue-100 rounded-xl py-3 px-6 w-full shadow-sm">
-                <p class="text-sky-700 font-medium text-lg italic">
-                    สถานะ: <span id="status-text">กำลังค้นหาใบหน้า...</span>
+        <!-- Info Bar -->
+        <div class="mt-8">
+            <div id="status-bar" class="bg-slate-50 border border-slate-100 rounded-2xl py-4 px-8 inline-block shadow-sm">
+                <p class="text-slate-600">
+                    <span class="font-semibold text-sky-600">สถานะ:</span> 
+                    <span id="status-text">กรุณาวางใบหน้าให้ตรงกับกล้อง</span>
                 </p>
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="mt-8 pt-4 border-t border-gray-100 text-sm text-gray-400">
-            <p>Create By <span class="font-bold text-sky-600">BiGGy Teacher @2026 ❤️</span></p>
-            <p class="mt-1 font-light">เพราะรอยยิ้มของคุณ คือความสุขของครู</p>
+        <!-- Custom Footer -->
+        <div class="mt-10 pt-6 border-t border-slate-50 text-xs text-slate-400">
+            <p class="uppercase tracking-widest font-bold">Emotion Analysis System</p>
         </div>
     </div>
 
-    <!-- Modal คำอวยพร: จะเด้งขึ้นมาเมื่อตรวจพบความสุข -->
-    <div id="modal-overlay" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-[100] backdrop-blur-sm">
-        <div class="blessing-modal bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl mx-4 border-4 border-yellow-400">
-            <div id="modal-icon" class="text-7xl mb-4">🤩</div>
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">ว้าว! รอยยิ้มสุดยอดเลย</h2>
-            <p class="text-gray-500 mb-4">สถานะ: <span class="font-bold text-green-600 italic text-lg">มีความสุขมากที่สุด!</span></p>
-            <div class="bg-sky-50 rounded-2xl p-6 mb-6 shadow-inner">
-                <p id="blessing-message" class="text-lg text-sky-800 leading-relaxed font-medium italic"></p>
+    <!-- Blessing Modal -->
+    <div id="modal-overlay" class="fixed inset-0 bg-slate-900/70 hidden flex items-center justify-center z-[100] backdrop-blur-md p-4">
+        <div class="blessing-modal bg-white rounded-[2.5rem] p-10 max-w-md w-full text-center shadow-2xl border border-white">
+            <div class="bg-yellow-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span id="modal-icon" class="text-6xl">✨</span>
             </div>
-            <button onclick="closeBlessing()" class="w-full bg-sky-600 hover:bg-sky-700 text-white px-8 py-4 rounded-2xl font-bold transition-all shadow-lg hover:shadow-sky-200 text-lg">
-                ขอบคุณครับ/ค่ะ ✨
+            <h2 class="text-3xl font-bold text-slate-800 mb-2">ตรวจพบรอยยิ้ม!</h2>
+            <p class="text-slate-500 mb-6 font-light">คุณดูมีความสุขมากในวันนี้</p>
+            <div class="bg-sky-50 rounded-3xl p-8 mb-8 border border-sky-100">
+                <p id="blessing-message" class="text-xl text-sky-900 leading-relaxed font-medium italic"></p>
+            </div>
+            <button onclick="closeBlessing()" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-2xl font-bold transition-all shadow-xl hover:shadow-slate-200 text-lg">
+                ปิดหน้าต่างนี้
             </button>
         </div>
     </div>
@@ -123,7 +113,6 @@
 
         let isShowingModal = false;
 
-        // คำอวยพรสุ่ม 10 ประโยค
         const blessings = [
             "ขอให้รอยยิ้มที่สดใสนี้ นำพาแต่เรื่องดีๆ มาให้คุณทั้งวันนะ 🌈",
             "คุณเก่งมาก! วันนี้จะเป็นวันที่ยอดเยี่ยมสำหรับคุณแน่นอน ✨",
@@ -137,24 +126,19 @@
             "จงรักษาความสดใสนี้ไว้ เพราะมันทำให้คุณดูดีที่สุดเลย 🧸"
         ];
 
-        // ฟังก์ชันเริ่มต้นโหลด AI
         async function init() {
             const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
-            
             try {
-                // โหลดโมเดลตรวจใบหน้าและโมเดลตรวจอารมณ์
                 await Promise.all([
                     faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
                     faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
                 ]);
                 startCamera();
             } catch (err) {
-                console.error("Model load error:", err);
-                statusText.innerText = "เกิดข้อผิดพลาดในการโหลด AI";
+                statusText.innerText = "ไม่สามารถโหลดระบบ AI ได้";
             }
         }
 
-        // ฟังก์ชันเปิดกล้อง
         function startCamera() {
             navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
                 .then(stream => {
@@ -162,8 +146,7 @@
                     loadingSpinner.classList.add('hidden');
                 })
                 .catch(err => {
-                    statusText.innerText = "ไม่สามารถเข้าถึงกล้องได้";
-                    console.error(err);
+                    statusText.innerText = "กรุณาเปิดการเข้าถึงกล้อง";
                 });
         }
 
@@ -185,87 +168,55 @@
                     resizedDetections.forEach(detection => {
                         const { x, y, width, height } = detection.detection.box;
                         const expressions = detection.expressions;
-                        
-                        // หาอารมณ์ที่ AI มั่นใจที่สุด
                         const topEmotion = Object.keys(expressions).reduce((a, b) => expressions[a] > expressions[b] ? a : b);
-                        const confidence = Math.round(expressions[topEmotion] * 100);
-
-                        // แผนผังคำแปล
-                        const emotionMap = {
-                            happy: `มีความสุข/ร่าเริง (${confidence}%)`,
-                            neutral: `ปกติ (${confidence}%)`,
-                            sad: `เศร้า (${confidence}%)`,
-                            angry: `โกรธ (${confidence}%)`,
-                            fearful: `กังวล (${confidence}%)`,
-                            disgusted: `ไม่พอใจ (${confidence}%)`,
-                            surprised: `ตกใจ (${confidence}%)`
-                        };
+                        
                         const emojiMap = { happy: '🤩', neutral: '😐', sad: '😢', angry: '😠', fearful: '😨', disgusted: '🤢', surprised: '😲' };
+                        const nameMap = { happy: 'มีความสุข', neutral: 'ปกติ', sad: 'เศร้า', angry: 'โกรธ', fearful: 'กังวล', disgusted: 'รังเกียจ', surprised: 'ตกใจ' };
 
-                        // --- ส่วนการวาด UI บน Canvas ---
-                        // วาดกรอบสี่เหลี่ยมสีเหลืองทอง
-                        ctx.strokeStyle = '#facc15';
+                        // UI Bounding Box
+                        ctx.strokeStyle = '#0ea5e9';
                         ctx.lineWidth = 4;
                         ctx.strokeRect(x, y, width, height);
 
-                        // สลับการวาดตัวอักษรกลับด้านเพื่อให้มนุษย์อ่านรู้เรื่อง (เพราะตัว container โดน mirror ไว้)
+                        // Label (Flipped for Mirror)
                         ctx.save();
                         ctx.scale(-1, 1);
-                        
-                        const text = (emojiMap[topEmotion] || '') + ' ' + (emotionMap[topEmotion] || topEmotion);
+                        const labelText = `${emojiMap[topEmotion]} ${nameMap[topEmotion]}`;
                         ctx.font = 'bold 16px Kanit';
-                        const textWidth = ctx.measureText(text).width;
-                        const flippedX = -(x + width); // คำนวณตำแหน่ง X ใหม่สำหรับโหมด mirror
-                        
-                        // วาดป้ายพื้นหลังข้อความ
-                        ctx.fillStyle = '#facc15';
-                        ctx.fillRect(flippedX, y - 35, textWidth + 20, 30);
-                        
-                        // เขียนตัวหนังสือ
-                        ctx.fillStyle = '#1e3a8a';
-                        ctx.fillText(text, flippedX + 10, y - 13);
+                        const tWidth = ctx.measureText(labelText).width;
+                        const fx = -(x + width);
+                        ctx.fillStyle = '#0ea5e9';
+                        ctx.fillRect(fx, y - 35, tWidth + 20, 30);
+                        ctx.fillStyle = 'white';
+                        ctx.fillText(labelText, fx + 10, y - 13);
                         ctx.restore();
 
-                        // อัปเดตข้อความแถบสถานะด้านล่าง
-                        statusText.innerHTML = `ตรวจพบอารมณ์ ${emojiMap[topEmotion]} ${emotionMap[topEmotion]}`;
+                        statusText.innerText = `ตรวจพบอารมณ์: ${nameMap[topEmotion]}`;
 
-                        // หากอารมณ์เป็น "happy" และมั่นใจมากกว่า 85% ให้แสดงคำอวยพร
                         if (topEmotion === 'happy' && expressions.happy > 0.85 && !isShowingModal) {
                             triggerBlessing();
                         }
                     });
                 } else {
-                    statusText.innerText = "กำลังค้นหาใบหน้า...";
+                    statusText.innerText = "ไม่พบใบหน้าในขณะนี้";
                 }
             }, 150);
         });
 
-        // ฟังก์ชันแสดงคำอวยพรและพลุกระดาษ
         function triggerBlessing() {
             isShowingModal = true;
-            const randomIndex = Math.floor(Math.random() * blessings.length);
-            blessingMessage.innerText = blessings[randomIndex];
+            blessingMessage.innerText = blessings[Math.floor(Math.random() * blessings.length)];
             modal.classList.remove('hidden');
-
-            // ยิงพลุฉลอง
-            confetti({
-                particleCount: 150,
-                spread: 70,
-                origin: { y: 0.6 }
-            });
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         }
 
-        // ฟังก์ชันปิดคำอวยพร
         function closeBlessing() {
             modal.classList.add('hidden');
-            // หน่วงเวลา 5 วินาทีก่อนตรวจจับรอบใหม่เพื่อป้องกันการเด้งรัว
-            setTimeout(() => {
-                isShowingModal = false;
-            }, 5000);
+            setTimeout(() => { isShowingModal = false; }, 3000);
         }
 
-        // เริ่มต้นรันระบบ
         init();
     </script>
 </body>
 </html>
+
