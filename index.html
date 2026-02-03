@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบตรวจเช็คความสุขประจำวัน</title>
+    <title>ระบบตรวจเช็คความสุขประจำวัน - ม.2/1</title>
     <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,25 +12,26 @@
         body {
             font-family: 'Kanit', sans-serif;
             background-color: #f8fafc;
-            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
-            background-size: 24px 24px;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 30px 30px;
         }
         .app-card {
-            border: 2px solid #0f172a;
-            border-radius: 2rem;
-            max-width: 800px;
+            border: 1px solid #e2e8f0;
+            border-radius: 1.5rem;
+            max-width: 950px;
             width: 100%;
             background: white;
+            position: relative;
         }
         #video-container {
             position: relative;
             width: 100%;
             max-width: 640px;
             margin: 0 auto;
-            border-radius: 1.5rem;
+            border-radius: 1.25rem;
             overflow: hidden;
-            transform: scaleX(-1);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            transform: scaleX(-1); /* Mirror Mode */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
         canvas {
             position: absolute;
@@ -44,62 +45,68 @@
             height: auto;
         }
         .blessing-modal {
-            animation: popUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        @keyframes popUp {
-            0% { transform: scale(0.5); opacity: 0; }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            70% { transform: scale(0.9); opacity: 0.9; }
             100% { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-6 text-slate-900">
+<body class="min-h-screen flex flex-col items-center justify-center p-4 md:p-8">
 
-    <div class="app-card shadow-2xl p-10 text-center relative">
-        <!-- Header: ปรับใหม่หลังนำโลโก้ออก -->
+    <div class="app-card shadow-2xl p-6 md:p-12 text-center border-t-8 border-t-sky-900">
+        <!-- Header Section -->
         <div class="mb-8">
-            <h1 class="text-4xl font-extrabold text-slate-800 tracking-tight">AI Happiness Detector</h1>
-            <div class="h-1.5 w-20 bg-sky-500 mx-auto my-4 rounded-full"></div>
-            <p class="text-lg text-slate-500 font-light">ยิ้มให้กล้องเพื่อรับคำอวยพรประจำวันของคุณ</p>
+            <div class="flex justify-center mb-6">
+                <!-- แก้ไขลิงก์โลโก้ให้เป็นภาพจากโรงเรียนโดยตรง -->
+                <img src="https://upload.wikimedia.org/wikipedia/th/a/a0/Prajinratsadornrung_School_Logo.png" 
+                     alt="โลโก้โรงเรียนปราจิณราษฎรอำรุง" 
+                     class="h-32 md:h-40 w-auto object-contain drop-shadow-xl"
+                     onerror="this.src='https://www.pjr.ac.th/pjr_logo.png'">
+            </div>
+            <h1 class="text-3xl md:text-4xl font-bold text-sky-900 tracking-tight mb-2">ระบบตรวจเช็คความสุขประจำวัน</h1>
+            <p class="text-lg md:text-xl text-slate-500 font-normal">นักเรียนชั้น ม.2/1 โรงเรียนปราจิณราษฎรอำรุง</p>
         </div>
 
-        <!-- Camera Section -->
-        <div id="video-container" class="bg-slate-100 border border-slate-200">
+        <!-- Camera / AI Section -->
+        <div id="video-container" class="bg-slate-50 border-2 border-slate-100">
             <video id="video" autoplay muted playsinline></video>
             <div id="loading-spinner" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-20" style="transform: scaleX(-1);">
-                <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-sky-600 border-opacity-25 border-t-sky-600"></div>
-                <p class="mt-4 text-sky-800 font-medium">กำลังเตรียมความพร้อมของ AI...</p>
+                <div class="animate-spin rounded-full h-14 w-14 border-4 border-sky-100 border-t-sky-800"></div>
+                <p class="mt-4 text-sky-900 font-semibold tracking-wide">กำลังเตรียมความพร้อมของ AI...</p>
             </div>
         </div>
 
-        <!-- Info Bar -->
-        <div class="mt-8">
-            <div id="status-bar" class="bg-slate-50 border border-slate-100 rounded-2xl py-4 px-8 inline-block shadow-sm">
-                <p class="text-slate-600">
-                    <span class="font-semibold text-sky-600">สถานะ:</span> 
-                    <span id="status-text">กรุณาวางใบหน้าให้ตรงกับกล้อง</span>
+        <!-- Status Information -->
+        <div class="mt-10">
+            <div id="status-bar" class="bg-[#f0f9eb] border border-[#e1f3d8] rounded-xl py-4 px-10 inline-block shadow-sm transition-all duration-300">
+                <p class="text-[#67c23a] font-semibold text-lg flex items-center gap-2">
+                    <span id="status-text">สถานะ: กำลังค้นหาใบหน้า...</span>
                 </p>
             </div>
         </div>
 
-        <!-- Custom Footer -->
-        <div class="mt-10 pt-6 border-t border-slate-50 text-xs text-slate-400">
-            <p class="uppercase tracking-widest font-bold">Emotion Analysis System</p>
+        <!-- Footer Section -->
+        <div class="mt-12 pt-6 border-t border-slate-100">
+            <p class="text-slate-400 text-sm font-medium">Create By <span class="text-slate-600">BiGGy Teacher @2026</span> ❤️</p>
+            <p class="text-slate-300 text-xs mt-1 tracking-widest uppercase">พัฒนาเพื่อการเรียนรู้และสร้างรอยยิ้ม</p>
         </div>
     </div>
 
-    <!-- Blessing Modal -->
-    <div id="modal-overlay" class="fixed inset-0 bg-slate-900/70 hidden flex items-center justify-center z-[100] backdrop-blur-md p-4">
-        <div class="blessing-modal bg-white rounded-[2.5rem] p-10 max-w-md w-full text-center shadow-2xl border border-white">
-            <div class="bg-yellow-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span id="modal-icon" class="text-6xl">✨</span>
+    <!-- Blessing Popup (Modal) -->
+    <div id="modal-overlay" class="fixed inset-0 bg-slate-900/80 hidden flex items-center justify-center z-[100] backdrop-blur-md p-4">
+        <div class="blessing-modal bg-white rounded-[2.5rem] p-10 max-w-md w-full text-center shadow-2xl border-4 border-yellow-400">
+            <div class="text-8xl mb-6">🤩</div>
+            <h2 class="text-3xl font-bold text-slate-800 mb-2">ยอดเยี่ยมมาก!</h2>
+            <p class="text-slate-500 mb-8 text-lg font-light">เราตรวจพบรอยยิ้มที่แสนพิเศษของคุณ</p>
+            <div class="bg-sky-50 rounded-3xl p-8 mb-8 border border-sky-100 shadow-inner">
+                <p id="blessing-message" class="text-xl text-sky-900 leading-relaxed font-semibold italic"></p>
             </div>
-            <h2 class="text-3xl font-bold text-slate-800 mb-2">ตรวจพบรอยยิ้ม!</h2>
-            <p class="text-slate-500 mb-6 font-light">คุณดูมีความสุขมากในวันนี้</p>
-            <div class="bg-sky-50 rounded-3xl p-8 mb-8 border border-sky-100">
-                <p id="blessing-message" class="text-xl text-sky-900 leading-relaxed font-medium italic"></p>
-            </div>
-            <button onclick="closeBlessing()" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-2xl font-bold transition-all shadow-xl hover:shadow-slate-200 text-lg">
-                ปิดหน้าต่างนี้
+            <button onclick="closeBlessing()" class="w-full bg-sky-800 hover:bg-sky-900 text-white py-5 rounded-2xl font-bold transition-all shadow-xl hover:shadow-sky-100 text-xl">
+                ขอบคุณครับ/ค่ะ ✨
             </button>
         </div>
     </div>
@@ -135,7 +142,7 @@
                 ]);
                 startCamera();
             } catch (err) {
-                statusText.innerText = "ไม่สามารถโหลดระบบ AI ได้";
+                statusText.innerText = "Error: ไม่สามารถโหลด AI ได้";
             }
         }
 
@@ -146,7 +153,7 @@
                     loadingSpinner.classList.add('hidden');
                 })
                 .catch(err => {
-                    statusText.innerText = "กรุณาเปิดการเข้าถึงกล้อง";
+                    statusText.innerText = "Error: กรุณาอนุญาตให้เข้าถึงกล้อง";
                 });
         }
 
@@ -169,36 +176,38 @@
                         const { x, y, width, height } = detection.detection.box;
                         const expressions = detection.expressions;
                         const topEmotion = Object.keys(expressions).reduce((a, b) => expressions[a] > expressions[b] ? a : b);
-                        
-                        const emojiMap = { happy: '🤩', neutral: '😐', sad: '😢', angry: '😠', fearful: '😨', disgusted: '🤢', surprised: '😲' };
-                        const nameMap = { happy: 'มีความสุข', neutral: 'ปกติ', sad: 'เศร้า', angry: 'โกรธ', fearful: 'กังวล', disgusted: 'รังเกียจ', surprised: 'ตกใจ' };
+                        const confidence = Math.round(expressions[topEmotion] * 100);
 
-                        // UI Bounding Box
-                        ctx.strokeStyle = '#0ea5e9';
+                        const emojiMap = { happy: '😊', neutral: '😐', sad: '😢', angry: '😠', fearful: '😨', disgusted: '🤢', surprised: '😲' };
+                        const nameMap = { happy: 'มีความสุข/ร่าเริง', neutral: 'ปกติ', sad: 'เศร้า', angry: 'โกรธ', fearful: 'กังวล', disgusted: 'ไม่พอใจ', surprised: 'ตกใจ' };
+
+                        // UI: Bounding Box
+                        ctx.strokeStyle = '#fbbf24';
                         ctx.lineWidth = 4;
                         ctx.strokeRect(x, y, width, height);
 
-                        // Label (Flipped for Mirror)
+                        // UI: Label (Handle Mirror)
                         ctx.save();
                         ctx.scale(-1, 1);
-                        const labelText = `${emojiMap[topEmotion]} ${nameMap[topEmotion]}`;
+                        const labelText = `${emojiMap[topEmotion]} ${nameMap[topEmotion]} (${confidence}%)`;
                         ctx.font = 'bold 16px Kanit';
                         const tWidth = ctx.measureText(labelText).width;
                         const fx = -(x + width);
-                        ctx.fillStyle = '#0ea5e9';
+                        
+                        ctx.fillStyle = '#fbbf24';
                         ctx.fillRect(fx, y - 35, tWidth + 20, 30);
-                        ctx.fillStyle = 'white';
+                        ctx.fillStyle = '#451a03';
                         ctx.fillText(labelText, fx + 10, y - 13);
                         ctx.restore();
 
-                        statusText.innerText = `ตรวจพบอารมณ์: ${nameMap[topEmotion]}`;
+                        statusText.innerHTML = `สถานะ: กำลังตรวจจับ... พบอารมณ์ ${emojiMap[topEmotion]} ${nameMap[topEmotion]}`;
 
-                        if (topEmotion === 'happy' && expressions.happy > 0.85 && !isShowingModal) {
+                        if (topEmotion === 'happy' && expressions.happy > 0.8 && !isShowingModal) {
                             triggerBlessing();
                         }
                     });
                 } else {
-                    statusText.innerText = "ไม่พบใบหน้าในขณะนี้";
+                    statusText.innerText = "สถานะ: กำลังค้นหาใบหน้า...";
                 }
             }, 150);
         });
@@ -207,16 +216,15 @@
             isShowingModal = true;
             blessingMessage.innerText = blessings[Math.floor(Math.random() * blessings.length)];
             modal.classList.remove('hidden');
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            confetti({ particleCount: 180, spread: 80, origin: { y: 0.6 }, colors: ['#0369a1', '#facc15', '#ffffff'] });
         }
 
         function closeBlessing() {
             modal.classList.add('hidden');
-            setTimeout(() => { isShowingModal = false; }, 3000);
+            setTimeout(() => { isShowingModal = false; }, 4000);
         }
 
         init();
     </script>
 </body>
 </html>
-
