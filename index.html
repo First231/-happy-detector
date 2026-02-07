@@ -18,7 +18,7 @@
         .app-card {
             border: 1px solid #e2e8f0;
             border-radius: 1.5rem;
-            max-width: 800px;
+            max-width: 850px;
             width: 100%;
             background: white;
             position: relative;
@@ -61,14 +61,17 @@
     <div class="app-card shadow-xl p-6 md:p-10 text-center border-t-8 border-t-sky-900">
         <!-- Header Section -->
         <div class="mb-6">
-            <div class="flex justify-center mb-4">
-                <!-- ใช้ลิงก์รูปภาพที่คุณระบุโดยตรง -->
+            <div class="flex justify-center mb-6">
+                <!-- โลโก้ตามลิงก์ที่ระบุ -->
                 <img src="https://img2.pic.in.th/logo-253x300-1.png" 
                      alt="โลโก้โรงเรียนปราจิณราษฎรอำรุง" 
-                     class="h-32 md:h-40 w-auto object-contain drop-shadow-md">
+                     class="h-32 md:h-44 w-auto object-contain drop-shadow-md">
             </div>
-            <h1 class="text-2xl md:text-3xl font-bold text-sky-900 mb-1">ระบบตรวจเช็คความสุขประจำวัน</h1>
-            <p class="text-base md:text-lg text-slate-500 font-normal italic">นักเรียนชั้น ม.2/1 โรงเรียนปราจิณราษฎรอำรุง</p>
+            <!-- แก้ไขหัวข้อตามคำขอ -->
+            <h1 class="text-2xl md:text-3xl font-bold text-sky-900 mb-2 leading-tight">
+                ระบบตรวจเช็คความสุขประจำวันของนักเรียนชั้น ม.2/1
+            </h1>
+            <p class="text-base md:text-lg text-slate-500 font-normal">โรงเรียนปราจิณราษฎรอำรุง</p>
         </div>
 
         <!-- Camera / AI Section -->
@@ -76,36 +79,37 @@
             <video id="video" autoplay muted playsinline></video>
             <div id="loading-spinner" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-20" style="transform: scaleX(-1);">
                 <div class="animate-spin rounded-full h-12 w-12 border-4 border-sky-100 border-t-sky-800"></div>
-                <p class="mt-4 text-sky-900 font-medium">กำลังโหลด AI...</p>
+                <p class="mt-4 text-sky-900 font-medium">กำลังโหลดระบบตรวจจับใบหน้า...</p>
             </div>
         </div>
 
         <!-- Status Information -->
-        <div class="mt-6">
-            <div id="status-bar" class="bg-emerald-50 border border-emerald-100 rounded-full py-2 px-8 inline-block shadow-sm">
+        <div class="mt-8">
+            <div id="status-bar" class="bg-emerald-50 border border-emerald-100 rounded-full py-2 px-10 inline-block shadow-sm">
                 <p class="text-emerald-700 font-semibold text-base flex items-center gap-2">
-                    <span id="status-text">สถานะ: กำลังเตรียมกล้อง...</span>
+                    <span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="status-text">สถานะ: ระบบกำลังทำงาน...</span>
                 </p>
             </div>
         </div>
 
         <!-- Footer Section -->
-        <div class="mt-8 pt-6 border-t border-slate-100">
-            <p class="text-slate-400 text-xs font-medium">Create By <span class="text-slate-600">First@2026</span> ❤️</p>
-            <p class="text-slate-300 text-[10px] mt-1 tracking-widest uppercase">PJR Emotion Analysis System</p>
+        <div class="mt-10 pt-6 border-t border-slate-100">
+            <p class="text-slate-400 text-xs font-medium">Create By <span class="text-slate-600 font-bold">First@2026</span> ❤️</p>
+            <p class="text-slate-300 text-[10px] mt-1 tracking-widest uppercase font-bold">Emotion Analysis for PJR School</p>
         </div>
     </div>
 
     <!-- Blessing Popup (Modal) -->
     <div id="modal-overlay" class="fixed inset-0 bg-slate-900/80 hidden flex items-center justify-center z-[100] backdrop-blur-sm p-4">
-        <div class="blessing-modal bg-white rounded-[2rem] p-8 max-w-sm w-full text-center shadow-2xl border-b-4 border-yellow-400">
-            <div class="text-6xl mb-4">😊</div>
-            <h2 class="text-2xl font-bold text-slate-800 mb-2">คุณยิ้มได้สวยมาก!</h2>
-            <p class="text-slate-500 mb-6 text-base">เราตรวจพบรอยยิ้มของคุณแล้ว</p>
-            <div class="bg-sky-50 rounded-2xl p-6 mb-6 border border-sky-100 shadow-inner">
+        <div class="blessing-modal bg-white rounded-[2.5rem] p-8 max-w-sm w-full text-center shadow-2xl border-b-8 border-yellow-400">
+            <div class="text-7xl mb-4">🌟</div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">รอยยิ้มแสนสวย!</h2>
+            <p class="text-slate-500 mb-6 text-base font-light">เราตรวจพบรอยยิ้มที่มีความสุขของคุณ</p>
+            <div class="bg-sky-50 rounded-2xl p-6 mb-8 border border-sky-100 shadow-inner">
                 <p id="blessing-message" class="text-lg text-sky-900 leading-relaxed font-semibold italic"></p>
             </div>
-            <button onclick="closeBlessing()" class="w-full bg-sky-800 hover:bg-sky-900 text-white py-4 rounded-xl font-bold transition-all shadow-md">
+            <button onclick="closeBlessing()" class="w-full bg-sky-800 hover:bg-sky-900 text-white py-4 rounded-xl font-bold transition-all shadow-lg active:scale-95">
                 ขอบคุณครับ/ค่ะ ✨
             </button>
         </div>
@@ -151,10 +155,10 @@
                 .then(stream => {
                     video.srcObject = stream;
                     loadingSpinner.classList.add('hidden');
-                    statusText.innerText = "สถานะ: พร้อมใช้งาน (กรุณายิ้มให้กล้อง)";
+                    statusText.innerText = "สถานะ: พร้อมใช้งาน (สแกนรอยยิ้มของคุณ)";
                 })
                 .catch(err => {
-                    statusText.innerText = "Error: เข้าถึงกล้องไม่ได้";
+                    statusText.innerText = "Error: ไม่ได้รับอนุญาตให้เข้าถึงกล้อง";
                 });
         }
 
@@ -211,7 +215,7 @@
             isShowingModal = true;
             blessingMessage.innerText = blessings[Math.floor(Math.random() * blessings.length)];
             modal.classList.remove('hidden');
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#0369a1', '#facc15', '#ffffff'] });
         }
 
         function closeBlessing() {
@@ -223,3 +227,4 @@
     </script>
 </body>
 </html>
+
