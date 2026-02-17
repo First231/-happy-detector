@@ -38,17 +38,20 @@
             background: #f8fafc;
         }
         #video-container video {
-            transform: scaleX(-1);
             width: 100%;
             height: 100%;
             object-fit: cover;
+            /* Mirror image visually */
+            transform: scaleX(-1);
         }
         canvas#face-canvas {
             position: absolute;
             top: 0;
             left: 0;
-            z-index: 10;
-            transform: scaleX(-1);
+            z-index: 20;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
         }
         /* Game Styles */
         #game-canvas {
@@ -83,7 +86,6 @@
                 ระบบตรวจเช็คความสุขประจำวันของนักเรียนชั้น ม.2/1
             </h1>
             
-            <!-- Navigation Buttons -->
             <div class="flex justify-center gap-2 mt-4">
                 <button onclick="switchMode('camera')" id="btn-camera" class="px-4 py-2 bg-sky-900 text-white rounded-full text-sm font-bold shadow-md transition-all">
                     📷 สแกนใบหน้า
@@ -98,7 +100,8 @@
         <div id="video-area">
             <div id="video-container">
                 <video id="video" autoplay muted playsinline></video>
-                <div id="loading-spinner" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-20">
+                <canvas id="face-canvas"></canvas>
+                <div id="loading-spinner" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-30">
                     <div class="animate-spin rounded-full h-12 w-12 border-4 border-sky-100 border-t-sky-800"></div>
                     <p class="mt-4 text-sky-900 font-medium">กำลังโหลดระบบ AI...</p>
                 </div>
@@ -113,14 +116,14 @@
             </div>
         </div>
 
-        <!-- Game Section (Hidden by default) -->
+        <!-- Game Section -->
         <div id="game-area" class="hidden-mode">
             <div id="game-container">
                 <canvas id="game-canvas"></canvas>
                 <div id="game-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-sky-900/10 backdrop-blur-[2px]">
                     <div class="bg-white/90 p-6 rounded-2xl shadow-xl border-2 border-sky-200">
                         <h3 class="text-2xl font-bold text-sky-900 mb-2">เกมเก็บความสุข ✨</h3>
-                        <p class="text-slate-600 mb-4">ลากตะกร้าเก็บไอเทมที่ตกลงมาให้ได้มากที่สุด!</p>
+                        <p class="text-slate-600 mb-4">ลากตะกร้าเก็บไอเทมความสุขเพื่อคลายเครียด!</p>
                         <button onclick="startGame()" class="bg-sky-600 hover:bg-sky-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition-all shadow-lg">เริ่มเล่นเลย</button>
                     </div>
                 </div>
@@ -129,7 +132,6 @@
                     <div class="bg-white/80 px-4 py-1 rounded-full font-bold text-red-600 shadow-sm border border-red-100">เวลา: <span id="game-timer">30</span></div>
                 </div>
             </div>
-            <p class="mt-4 text-slate-400 text-sm font-light italic">เล่นเกมเพื่อคลายเครียดก่อนสแกนรอยยิ้มนะ!</p>
         </div>
 
         <!-- Footer -->
@@ -153,19 +155,23 @@
     </div>
 
     <script>
-        // -- AI & Camera Logic --
         const video = document.getElementById('video');
+        const faceCanvas = document.getElementById('face-canvas');
         const statusText = document.getElementById('status-text');
         const loadingSpinner = document.getElementById('loading-spinner');
         const modal = document.getElementById('modal-overlay');
         const blessingMessage = document.getElementById('blessing-message');
-        const modalTitle = document.getElementById('modal-title');
-        const modalIcon = document.getElementById('modal-icon');
 
         let isShowingModal = false;
         let isCameraActive = true;
 
-        const blessings = ["ขอให้รอยยิ้มนี้ นำพาเรื่องดีๆ มาให้ทั้งวันนะ 🌈", "คุณเก่งมาก! วันนี้จะเป็นวันที่ยอดเยี่ยม ✨", "ขอให้มีความสุขในทุกคาบเรียนนะ 📚", "โลกใบนี้ใจดีขึ้นเมื่อเห็นคุณยิ้ม 💖", "ขอให้ได้รับพลังบวกเสมอ 🌸"];
+        const blessings = [
+            "ขอให้รอยยิ้มนี้ นำพาเรื่องดีๆ มาให้ทั้งวันนะ 🌈",
+            "คุณเก่งมาก! วันนี้จะเป็นวันที่ยอดเยี่ยม ✨",
+            "ขอให้มีความสุขในทุกคาบเรียนนะ 📚",
+            "โลกใบนี้ใจดีขึ้นเมื่อเห็นคุณยิ้ม 💖",
+            "ขอให้ได้รับพลังบวกเสมอ 🌸"
+        ];
 
         async function initAI() {
             const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
@@ -188,42 +194,59 @@
         }
 
         video.addEventListener('play', () => {
-            const canvas = faceapi.createCanvasFromMedia(video);
-            canvas.id = "face-canvas";
-            document.getElementById('video-container').append(canvas);
             const displaySize = { width: video.clientWidth, height: video.clientHeight };
-            faceapi.matchDimensions(canvas, displaySize);
+            faceapi.matchDimensions(faceCanvas, displaySize);
 
             setInterval(async () => {
                 if(!isCameraActive || isShowingModal) return;
+
                 const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
                 const resizedDetections = faceapi.resizeResults(detections, displaySize);
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const ctx = faceCanvas.getContext('2d');
+                ctx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
 
                 resizedDetections.forEach(detection => {
                     const { x, y, width, height } = detection.detection.box;
                     const expressions = detection.expressions;
-                    const topEmotion = Object.keys(expressions).reduce((a, b) => expressions[a] > expressions[b] ? a : b);
                     
-                    ctx.strokeStyle = '#0ea5e9';
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(x, y, width, height);
+                    // หาอารมณ์ที่เด่นที่สุด
+                    const topEmotion = Object.keys(expressions).reduce((a, b) => expressions[a] > expressions[b] ? a : b);
+                    const confidence = Math.round(expressions[topEmotion] * 100);
 
-                    if (topEmotion === 'happy' && expressions.happy > 0.8) {
+                    // วาดกรอบบนใบหน้า (ต้องคำนวณแบบ Mirror)
+                    ctx.strokeStyle = '#0ea5e9';
+                    ctx.lineWidth = 4;
+                    // เนื่องจาก video scaleX(-1) เราต้องกลับด้าน x ของกรอบเพื่อให้ตรงกับหน้า
+                    const mirroredX = displaySize.width - x - width;
+                    ctx.strokeRect(mirroredX, y, width, height);
+
+                    // เตรียมข้อความ
+                    const emojiMap = { happy: '😊', neutral: '😐', sad: '😢', angry: '😠', fearful: '😨', disgusted: '🤢', surprised: '😲' };
+                    const nameMap = { happy: 'ร่าเริง', neutral: 'ปกติ', sad: 'เศร้า', angry: 'โกรธ', fearful: 'กังวล', disgusted: 'ไม่พอใจ', surprised: 'ตกใจ' };
+                    const labelText = `${emojiMap[topEmotion] || ''} ${nameMap[topEmotion] || topEmotion} ${confidence}%`;
+
+                    // วาดแถบพื้นหลังข้อความ
+                    ctx.font = 'bold 16px Kanit';
+                    const textWidth = ctx.measureText(labelText).width;
+                    ctx.fillStyle = '#0ea5e9';
+                    ctx.fillRect(mirroredX, y - 35, textWidth + 20, 30);
+                    
+                    // วาดตัวหนังสือ
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(labelText, mirroredX + 10, y - 14);
+
+                    // ตรวจจับการยิ้ม
+                    if (topEmotion === 'happy' && expressions.happy > 0.7) {
                         triggerBlessing();
                     }
                 });
-            }, 200);
+            }, 150);
         });
 
         // -- Game Logic --
         const gameCanvas = document.getElementById('game-canvas');
         const gameCtx = gameCanvas.getContext('2d');
-        let gameActive = false;
-        let score = 0;
-        let timeLeft = 30;
-        let items = [];
+        let gameActive = false, score = 0, timeLeft = 30, items = [];
         let basket = { x: 0, width: 80, height: 40 };
         let gameInterval, timerInterval;
 
@@ -251,14 +274,10 @@
         }
 
         function startGame() {
-            gameActive = true;
-            score = 0;
-            timeLeft = 30;
-            items = [];
+            gameActive = true; score = 0; timeLeft = 30; items = [];
             document.getElementById('game-overlay').classList.add('hidden-mode');
             document.getElementById('game-stats').classList.remove('hidden-mode');
             document.getElementById('game-score').innerText = score;
-            
             gameInterval = setInterval(updateGame, 1000/60);
             timerInterval = setInterval(() => {
                 timeLeft--;
@@ -269,74 +288,40 @@
 
         function updateGame() {
             gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
-            
-            // Draw Basket
             gameCtx.fillStyle = '#0c4a6e';
             gameCtx.beginPath();
             gameCtx.roundRect(basket.x, gameCanvas.height - 50, basket.width, basket.height, 10);
             gameCtx.fill();
-
-            // Create items
             if(Math.random() < 0.03) {
-                items.push({
-                    x: Math.random() * (gameCanvas.width - 30),
-                    y: -30,
-                    size: 25,
-                    type: ['❤️', '😊', '⭐', '✨'][Math.floor(Math.random()*4)],
-                    speed: 2 + Math.random() * 3
-                });
+                items.push({ x: Math.random() * (gameCanvas.width - 30), y: -30, type: ['❤️', '😊', '⭐'][Math.floor(Math.random()*3)], speed: 2 + Math.random() * 3 });
             }
-
-            // Update items
             for(let i=items.length-1; i>=0; i--) {
-                const item = items[i];
-                item.y += item.speed;
-                
-                gameCtx.font = '25px Arial';
-                gameCtx.fillText(item.type, item.x, item.y);
-
-                // Collision detection
+                const item = items[i]; item.y += item.speed;
+                gameCtx.font = '25px Arial'; gameCtx.fillText(item.type, item.x, item.y);
                 if(item.y > gameCanvas.height - 50 && item.y < gameCanvas.height && item.x > basket.x - 10 && item.x < basket.x + basket.width + 10) {
-                    score += 10;
-                    document.getElementById('game-score').innerText = score;
-                    items.splice(i, 1);
-                } else if(item.y > gameCanvas.height) {
-                    items.splice(i, 1);
-                }
+                    score += 10; document.getElementById('game-score').innerText = score; items.splice(i, 1);
+                } else if(item.y > gameCanvas.height) items.splice(i, 1);
             }
         }
 
         function endGame() {
-            gameActive = false;
-            clearInterval(gameInterval);
-            clearInterval(timerInterval);
+            clearInterval(gameInterval); clearInterval(timerInterval);
             document.getElementById('game-overlay').classList.remove('hidden-mode');
             document.getElementById('game-overlay').innerHTML = `
                 <div class="bg-white/90 p-6 rounded-2xl shadow-xl border-2 border-sky-200 text-center">
-                    <h3 class="text-2xl font-bold text-sky-900 mb-2">จบเกม! 👏</h3>
-                    <p class="text-slate-600 mb-2">คุณเก็บความสุขได้ทั้งหมด</p>
-                    <p class="text-4xl font-black text-sky-600 mb-6">${score} คะแนน</p>
-                    <button onclick="startGame()" class="bg-sky-600 hover:bg-sky-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition-all shadow-lg mr-2">เล่นอีกครั้ง</button>
-                    <button onclick="switchMode('camera')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition-all shadow-lg">ไปยิ้มกันต่อ</button>
-                </div>
-            `;
+                    <h3 class="text-xl font-bold text-sky-900 mb-2">จบเกม! คะแนนของคุณคือ ${score}</h3>
+                    <button onclick="startGame()" class="bg-sky-600 text-white px-6 py-2 rounded-xl font-bold mr-2">เล่นใหม่</button>
+                    <button onclick="switchMode('camera')" class="bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold">ไปสแกนรอยยิ้ม</button>
+                </div>`;
         }
 
-        // Control
         gameCanvas.addEventListener('mousemove', (e) => {
             const rect = gameCanvas.getBoundingClientRect();
             basket.x = e.clientX - rect.left - basket.width / 2;
         });
-        gameCanvas.addEventListener('touchmove', (e) => {
-            const rect = gameCanvas.getBoundingClientRect();
-            basket.x = e.touches[0].clientX - rect.left - basket.width / 2;
-            e.preventDefault();
-        }, {passive: false});
 
         function triggerBlessing() {
             isShowingModal = true;
-            modalIcon.innerText = "🌟";
-            modalTitle.innerText = "รอยยิ้มแสนสวย!";
             blessingMessage.innerText = blessings[Math.floor(Math.random() * blessings.length)];
             modal.classList.remove('hidden');
             confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
