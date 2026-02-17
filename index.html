@@ -14,6 +14,7 @@
             background-color: #f8fafc;
             background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
             background-size: 20px 20px;
+            overflow-x: hidden;
         }
         .app-card {
             border: 1px solid #e2e8f0;
@@ -22,28 +23,39 @@
             width: 100%;
             background: white;
             position: relative;
+            z-index: 10;
         }
-        #video-container {
+        #video-container, #game-container {
             position: relative;
             width: 100%;
             max-width: 600px;
             margin: 0 auto;
             border-radius: 1rem;
             overflow: hidden;
-            transform: scaleX(-1); /* Mirror Mode */
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             border: 4px solid #f1f5f9;
+            height: 400px;
+            background: #f8fafc;
         }
-        canvas {
+        #video-container video {
+            transform: scaleX(-1);
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        canvas#face-canvas {
             position: absolute;
             top: 0;
             left: 0;
             z-index: 10;
+            transform: scaleX(-1);
         }
-        video {
-            display: block;
+        /* Game Styles */
+        #game-canvas {
             width: 100%;
-            height: auto;
+            height: 100%;
+            cursor: crosshair;
+            background: linear-gradient(to bottom, #e0f2fe, #f0f9ff);
         }
         .blessing-modal {
             animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -54,6 +66,7 @@
             70% { transform: scale(0.9); opacity: 0.9; }
             100% { transform: scale(1); opacity: 1; }
         }
+        .hidden-mode { display: none !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
@@ -62,82 +75,99 @@
         <!-- Header Section -->
         <div class="mb-6">
             <div class="flex justify-center mb-6">
-                <!-- โลโก้ตามลิงก์ที่ระบุ -->
                 <img src="https://img2.pic.in.th/logo-253x300-1.png" 
                      alt="โลโก้โรงเรียนปราจิณราษฎรอำรุง" 
-                     class="h-32 md:h-44 w-auto object-contain drop-shadow-md">
+                     class="h-28 md:h-36 w-auto object-contain drop-shadow-md">
             </div>
-            <!-- แก้ไขหัวข้อตามคำขอ -->
-            <h1 class="text-2xl md:text-3xl font-bold text-sky-900 mb-2 leading-tight">
+            <h1 class="text-xl md:text-2xl font-bold text-sky-900 mb-2 leading-tight">
                 ระบบตรวจเช็คความสุขประจำวันของนักเรียนชั้น ม.2/1
             </h1>
-            <p class="text-base md:text-lg text-slate-500 font-normal">โรงเรียนปราจิณราษฎรอำรุง</p>
-        </div>
-
-        <!-- Camera / AI Section -->
-        <div id="video-container" class="bg-slate-50">
-            <video id="video" autoplay muted playsinline></video>
-            <div id="loading-spinner" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-20" style="transform: scaleX(-1);">
-                <div class="animate-spin rounded-full h-12 w-12 border-4 border-sky-100 border-t-sky-800"></div>
-                <p class="mt-4 text-sky-900 font-medium">กำลังโหลดระบบตรวจจับใบหน้า...</p>
+            
+            <!-- Navigation Buttons -->
+            <div class="flex justify-center gap-2 mt-4">
+                <button onclick="switchMode('camera')" id="btn-camera" class="px-4 py-2 bg-sky-900 text-white rounded-full text-sm font-bold shadow-md transition-all">
+                    📷 สแกนใบหน้า
+                </button>
+                <button onclick="switchMode('game')" id="btn-game" class="px-4 py-2 bg-white text-sky-900 border-2 border-sky-900 rounded-full text-sm font-bold shadow-md hover:bg-sky-50 transition-all">
+                    🎮 เล่นเกมแก้เครียด
+                </button>
             </div>
         </div>
 
-        <!-- Status Information -->
-        <div class="mt-8">
-            <div id="status-bar" class="bg-emerald-50 border border-emerald-100 rounded-full py-2 px-10 inline-block shadow-sm">
-                <p class="text-emerald-700 font-semibold text-base flex items-center gap-2">
-                    <span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span id="status-text">สถานะ: ระบบกำลังทำงาน...</span>
-                </p>
+        <!-- Camera Section -->
+        <div id="video-area">
+            <div id="video-container">
+                <video id="video" autoplay muted playsinline></video>
+                <div id="loading-spinner" class="absolute inset-0 flex flex-col items-center justify-center bg-white z-20">
+                    <div class="animate-spin rounded-full h-12 w-12 border-4 border-sky-100 border-t-sky-800"></div>
+                    <p class="mt-4 text-sky-900 font-medium">กำลังโหลดระบบ AI...</p>
+                </div>
+            </div>
+            <div class="mt-8">
+                <div id="status-bar" class="bg-emerald-50 border border-emerald-100 rounded-full py-2 px-10 inline-block shadow-sm">
+                    <p class="text-emerald-700 font-semibold text-base flex items-center gap-2">
+                        <span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="status-text">สถานะ: ระบบกล้องพร้อมทำงาน</span>
+                    </p>
+                </div>
             </div>
         </div>
 
-        <!-- Footer Section -->
+        <!-- Game Section (Hidden by default) -->
+        <div id="game-area" class="hidden-mode">
+            <div id="game-container">
+                <canvas id="game-canvas"></canvas>
+                <div id="game-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-sky-900/10 backdrop-blur-[2px]">
+                    <div class="bg-white/90 p-6 rounded-2xl shadow-xl border-2 border-sky-200">
+                        <h3 class="text-2xl font-bold text-sky-900 mb-2">เกมเก็บความสุข ✨</h3>
+                        <p class="text-slate-600 mb-4">ลากตะกร้าเก็บไอเทมที่ตกลงมาให้ได้มากที่สุด!</p>
+                        <button onclick="startGame()" class="bg-sky-600 hover:bg-sky-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition-all shadow-lg">เริ่มเล่นเลย</button>
+                    </div>
+                </div>
+                <div id="game-stats" class="absolute top-4 left-4 right-4 flex justify-between hidden-mode pointer-events-none">
+                    <div class="bg-white/80 px-4 py-1 rounded-full font-bold text-sky-900 shadow-sm border border-sky-100">คะแนน: <span id="game-score">0</span></div>
+                    <div class="bg-white/80 px-4 py-1 rounded-full font-bold text-red-600 shadow-sm border border-red-100">เวลา: <span id="game-timer">30</span></div>
+                </div>
+            </div>
+            <p class="mt-4 text-slate-400 text-sm font-light italic">เล่นเกมเพื่อคลายเครียดก่อนสแกนรอยยิ้มนะ!</p>
+        </div>
+
+        <!-- Footer -->
         <div class="mt-10 pt-6 border-t border-slate-100">
             <p class="text-slate-400 text-xs font-medium">Create By <span class="text-slate-600 font-bold">First@2026</span> ❤️</p>
-            <p class="text-slate-300 text-[10px] mt-1 tracking-widest uppercase font-bold">Emotion Analysis for PJR School</p>
         </div>
     </div>
 
-    <!-- Blessing Popup (Modal) -->
+    <!-- Blessing Popup -->
     <div id="modal-overlay" class="fixed inset-0 bg-slate-900/80 hidden flex items-center justify-center z-[100] backdrop-blur-sm p-4">
         <div class="blessing-modal bg-white rounded-[2.5rem] p-8 max-w-sm w-full text-center shadow-2xl border-b-8 border-yellow-400">
-            <div class="text-7xl mb-4">🌟</div>
-            <h2 class="text-2xl font-bold text-slate-800 mb-2">รอยยิ้มแสนสวย!</h2>
-            <p class="text-slate-500 mb-6 text-base font-light">เราตรวจพบรอยยิ้มที่มีความสุขของคุณ</p>
+            <div id="modal-icon" class="text-7xl mb-4">🌟</div>
+            <h2 id="modal-title" class="text-2xl font-bold text-slate-800 mb-2">รอยยิ้มแสนสวย!</h2>
             <div class="bg-sky-50 rounded-2xl p-6 mb-8 border border-sky-100 shadow-inner">
                 <p id="blessing-message" class="text-lg text-sky-900 leading-relaxed font-semibold italic"></p>
             </div>
-            <button onclick="closeBlessing()" class="w-full bg-sky-800 hover:bg-sky-900 text-white py-4 rounded-xl font-bold transition-all shadow-lg active:scale-95">
-                ขอบคุณครับ/ค่ะ ✨
+            <button onclick="closeBlessing()" class="w-full bg-sky-800 hover:bg-sky-900 text-white py-4 rounded-xl font-bold transition-all shadow-lg">
+                ปิดหน้าต่าง ✨
             </button>
         </div>
     </div>
 
     <script>
+        // -- AI & Camera Logic --
         const video = document.getElementById('video');
         const statusText = document.getElementById('status-text');
         const loadingSpinner = document.getElementById('loading-spinner');
         const modal = document.getElementById('modal-overlay');
         const blessingMessage = document.getElementById('blessing-message');
+        const modalTitle = document.getElementById('modal-title');
+        const modalIcon = document.getElementById('modal-icon');
 
         let isShowingModal = false;
+        let isCameraActive = true;
 
-        const blessings = [
-            "ขอให้รอยยิ้มที่สดใสนี้ นำพาแต่เรื่องดีๆ มาให้คุณทั้งวันนะ 🌈",
-            "คุณเก่งมาก! วันนี้จะเป็นวันที่ยอดเยี่ยมสำหรับคุณแน่นอน ✨",
-            "ขอให้รอยยิ้มนี้เบ่งบานในหัวใจ และมีความสุขในทุกคาบเรียนนะ 📚",
-            "โลกใบนี้ใจดีขึ้นเยอะเลย เมื่อเห็นคุณยิ้มแบบนี้ 💖",
-            "ขอให้ได้รับพลังบวก และมีมิตรภาพที่น่ารักรอบตัวเสมอ 🌸",
-            "ความสุขของคุณมีค่าที่สุด ขอให้วันนี้เจอแต่เรื่องที่ทำให้หัวเราะนะ 😊",
-            "รอยยิ้มของคุณคือความภูมิใจ ขอให้เป็นวันที่ประสบความสำเร็จนะ 🌟",
-            "ส่งความปรารถนาดีผ่านรอยยิ้ม ขอให้มีความสุขสนุกกับการเรียนนะ 🍦",
-            "ขอให้สิ่งดีๆ ไหลมาเทมาเหมือนรอยยิ้มที่กว้างขวางของคุณวันนี้ 🍀",
-            "จงรักษาความสดใสนี้ไว้ เพราะมันทำให้คุณดูดีที่สุดเลย 🧸"
-        ];
+        const blessings = ["ขอให้รอยยิ้มนี้ นำพาเรื่องดีๆ มาให้ทั้งวันนะ 🌈", "คุณเก่งมาก! วันนี้จะเป็นวันที่ยอดเยี่ยม ✨", "ขอให้มีความสุขในทุกคาบเรียนนะ 📚", "โลกใบนี้ใจดีขึ้นเมื่อเห็นคุณยิ้ม 💖", "ขอให้ได้รับพลังบวกเสมอ 🌸"];
 
-        async function init() {
+        async function initAI() {
             const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
             try {
                 await Promise.all([
@@ -145,9 +175,7 @@
                     faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
                 ]);
                 startCamera();
-            } catch (err) {
-                statusText.innerText = "Error: ไม่สามารถโหลดระบบ AI ได้";
-            }
+            } catch (err) { statusText.innerText = "Error: โหลด AI ไม่สำเร็จ"; }
         }
 
         function startCamera() {
@@ -155,67 +183,163 @@
                 .then(stream => {
                     video.srcObject = stream;
                     loadingSpinner.classList.add('hidden');
-                    statusText.innerText = "สถานะ: พร้อมใช้งาน (สแกนรอยยิ้มของคุณ)";
                 })
-                .catch(err => {
-                    statusText.innerText = "Error: ไม่ได้รับอนุญาตให้เข้าถึงกล้อง";
-                });
+                .catch(() => { statusText.innerText = "Error: เข้าถึงกล้องไม่ได้"; });
         }
 
         video.addEventListener('play', () => {
             const canvas = faceapi.createCanvasFromMedia(video);
+            canvas.id = "face-canvas";
             document.getElementById('video-container').append(canvas);
             const displaySize = { width: video.clientWidth, height: video.clientHeight };
             faceapi.matchDimensions(canvas, displaySize);
 
             setInterval(async () => {
-                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-                    .withFaceExpressions();
-
+                if(!isCameraActive || isShowingModal) return;
+                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
                 const resizedDetections = faceapi.resizeResults(detections, displaySize);
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                if (resizedDetections.length > 0) {
-                    resizedDetections.forEach(detection => {
-                        const { x, y, width, height } = detection.detection.box;
-                        const expressions = detection.expressions;
-                        const topEmotion = Object.keys(expressions).reduce((a, b) => expressions[a] > expressions[b] ? a : b);
-                        const confidence = Math.round(expressions[topEmotion] * 100);
+                resizedDetections.forEach(detection => {
+                    const { x, y, width, height } = detection.detection.box;
+                    const expressions = detection.expressions;
+                    const topEmotion = Object.keys(expressions).reduce((a, b) => expressions[a] > expressions[b] ? a : b);
+                    
+                    ctx.strokeStyle = '#0ea5e9';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(x, y, width, height);
 
-                        const emojiMap = { happy: '😊', neutral: '😐', sad: '😢', angry: '😠', fearful: '😨', disgusted: '🤢', surprised: '😲' };
-                        const nameMap = { happy: 'มีความสุข', neutral: 'ปกติ', sad: 'เศร้า', angry: 'โกรธ', fearful: 'กังวล', disgusted: 'ไม่พอใจ', surprised: 'ตกใจ' };
-
-                        ctx.strokeStyle = '#0ea5e9';
-                        ctx.lineWidth = 3;
-                        ctx.strokeRect(x, y, width, height);
-
-                        ctx.save();
-                        ctx.scale(-1, 1);
-                        const labelText = `${emojiMap[topEmotion]} ${nameMap[topEmotion]} ${confidence}%`;
-                        ctx.font = 'bold 14px Kanit';
-                        const tWidth = ctx.measureText(labelText).width;
-                        const fx = -(x + width);
-                        
-                        ctx.fillStyle = '#0ea5e9';
-                        ctx.fillRect(fx, y - 30, tWidth + 20, 25);
-                        ctx.fillStyle = 'white';
-                        ctx.fillText(labelText, fx + 10, y - 12);
-                        ctx.restore();
-
-                        if (topEmotion === 'happy' && expressions.happy > 0.8 && !isShowingModal) {
-                            triggerBlessing();
-                        }
-                    });
-                }
+                    if (topEmotion === 'happy' && expressions.happy > 0.8) {
+                        triggerBlessing();
+                    }
+                });
             }, 200);
         });
 
+        // -- Game Logic --
+        const gameCanvas = document.getElementById('game-canvas');
+        const gameCtx = gameCanvas.getContext('2d');
+        let gameActive = false;
+        let score = 0;
+        let timeLeft = 30;
+        let items = [];
+        let basket = { x: 0, width: 80, height: 40 };
+        let gameInterval, timerInterval;
+
+        function switchMode(mode) {
+            if (mode === 'camera') {
+                isCameraActive = true;
+                document.getElementById('video-area').classList.remove('hidden-mode');
+                document.getElementById('game-area').classList.add('hidden-mode');
+                document.getElementById('btn-camera').className = "px-4 py-2 bg-sky-900 text-white rounded-full text-sm font-bold shadow-md";
+                document.getElementById('btn-game').className = "px-4 py-2 bg-white text-sky-900 border-2 border-sky-900 rounded-full text-sm font-bold shadow-md hover:bg-sky-50";
+            } else {
+                isCameraActive = false;
+                document.getElementById('video-area').classList.add('hidden-mode');
+                document.getElementById('game-area').classList.remove('hidden-mode');
+                document.getElementById('btn-game').className = "px-4 py-2 bg-sky-900 text-white rounded-full text-sm font-bold shadow-md";
+                document.getElementById('btn-camera').className = "px-4 py-2 bg-white text-sky-900 border-2 border-sky-900 rounded-full text-sm font-bold shadow-md hover:bg-sky-50";
+                resizeGameCanvas();
+            }
+        }
+
+        function resizeGameCanvas() {
+            gameCanvas.width = gameCanvas.parentElement.clientWidth;
+            gameCanvas.height = gameCanvas.parentElement.clientHeight;
+            basket.x = gameCanvas.width / 2 - basket.width / 2;
+        }
+
+        function startGame() {
+            gameActive = true;
+            score = 0;
+            timeLeft = 30;
+            items = [];
+            document.getElementById('game-overlay').classList.add('hidden-mode');
+            document.getElementById('game-stats').classList.remove('hidden-mode');
+            document.getElementById('game-score').innerText = score;
+            
+            gameInterval = setInterval(updateGame, 1000/60);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('game-timer').innerText = timeLeft;
+                if(timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function updateGame() {
+            gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+            
+            // Draw Basket
+            gameCtx.fillStyle = '#0c4a6e';
+            gameCtx.beginPath();
+            gameCtx.roundRect(basket.x, gameCanvas.height - 50, basket.width, basket.height, 10);
+            gameCtx.fill();
+
+            // Create items
+            if(Math.random() < 0.03) {
+                items.push({
+                    x: Math.random() * (gameCanvas.width - 30),
+                    y: -30,
+                    size: 25,
+                    type: ['❤️', '😊', '⭐', '✨'][Math.floor(Math.random()*4)],
+                    speed: 2 + Math.random() * 3
+                });
+            }
+
+            // Update items
+            for(let i=items.length-1; i>=0; i--) {
+                const item = items[i];
+                item.y += item.speed;
+                
+                gameCtx.font = '25px Arial';
+                gameCtx.fillText(item.type, item.x, item.y);
+
+                // Collision detection
+                if(item.y > gameCanvas.height - 50 && item.y < gameCanvas.height && item.x > basket.x - 10 && item.x < basket.x + basket.width + 10) {
+                    score += 10;
+                    document.getElementById('game-score').innerText = score;
+                    items.splice(i, 1);
+                } else if(item.y > gameCanvas.height) {
+                    items.splice(i, 1);
+                }
+            }
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(gameInterval);
+            clearInterval(timerInterval);
+            document.getElementById('game-overlay').classList.remove('hidden-mode');
+            document.getElementById('game-overlay').innerHTML = `
+                <div class="bg-white/90 p-6 rounded-2xl shadow-xl border-2 border-sky-200 text-center">
+                    <h3 class="text-2xl font-bold text-sky-900 mb-2">จบเกม! 👏</h3>
+                    <p class="text-slate-600 mb-2">คุณเก็บความสุขได้ทั้งหมด</p>
+                    <p class="text-4xl font-black text-sky-600 mb-6">${score} คะแนน</p>
+                    <button onclick="startGame()" class="bg-sky-600 hover:bg-sky-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition-all shadow-lg mr-2">เล่นอีกครั้ง</button>
+                    <button onclick="switchMode('camera')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition-all shadow-lg">ไปยิ้มกันต่อ</button>
+                </div>
+            `;
+        }
+
+        // Control
+        gameCanvas.addEventListener('mousemove', (e) => {
+            const rect = gameCanvas.getBoundingClientRect();
+            basket.x = e.clientX - rect.left - basket.width / 2;
+        });
+        gameCanvas.addEventListener('touchmove', (e) => {
+            const rect = gameCanvas.getBoundingClientRect();
+            basket.x = e.touches[0].clientX - rect.left - basket.width / 2;
+            e.preventDefault();
+        }, {passive: false});
+
         function triggerBlessing() {
             isShowingModal = true;
+            modalIcon.innerText = "🌟";
+            modalTitle.innerText = "รอยยิ้มแสนสวย!";
             blessingMessage.innerText = blessings[Math.floor(Math.random() * blessings.length)];
             modal.classList.remove('hidden');
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#0369a1', '#facc15', '#ffffff'] });
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         }
 
         function closeBlessing() {
@@ -223,8 +347,7 @@
             setTimeout(() => { isShowingModal = false; }, 3000);
         }
 
-        init();
+        initAI();
     </script>
 </body>
 </html>
-
